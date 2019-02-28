@@ -1,0 +1,316 @@
+---
+title: "FFT"
+author: "Amy"
+date: "2/25/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+library(tidyverse)
+library(rvest)
+library(stringr)
+library(rebus)
+library(XLConnect)
+library(XLConnectJars)
+library(RCurl)
+library(readxl)
+library(gdata)
+library(readr)
+```
+
+Before running the code, create a folder to store the raw data. Here I created a folder called "data" to store all monthly data files from 2014-2017.
+
+### load in 2014 data        
+No data files in May and July
+```{r 2014 xls parse}
+# No May and July data in 2014
+url_2014 <- "https://www.atf.gov/firearms/listing-federal-firearms-licensees-ffls-2014"
+
+# get the xls download urls
+### No May and July data
+xls_2014 <- url_2014 %>%
+  read_html() %>%
+  html_nodes(xpath = '//table[3]/tr[2]/td/p/a[text()="XLS"]|//table[3]/tr[2]/td/p[text()="XLS"]') %>% 
+  html_attr("href")
+xls_2014
+
+# get the txt download urls
+### No May, July and August data
+txt_2014 <- url_2014 %>%
+  read_html() %>%
+  html_nodes(xpath = '//table[3]/tr[2]/td/p/a[text()="TXT"]|//table[3]/tr[2]/td/p[text()="TXT"]') %>% 
+  html_attr("href")
+txt_2014
+```
+
+```{r}
+dat_2014 = data.frame()
+#No May, July and August data in txt format
+#September not working well
+for (i in 1:length(txt_2014)){
+  if (i %in% c(5,7,8,9)){
+    next
+  } else {
+    # download the raw txt from the web
+    destfile = paste("~/Desktop/data/2014_", i, ".txt", sep = "")
+    download.file(txt_2014[i], destfile = destfile, mode='wb')
+    d = read.delim(txt_2014[i])
+    if (str_detect(d[1,1], "---")){
+      d = d[-1,]
+    }
+    d$Year = 2014
+    d$Month = i
+    dat_2014 = rbind(dat_2014, d)
+  }
+  print(i)
+}
+```
+
+```{r}
+# Read August data from xls format
+xls_1408 <- xls_2014[8]
+
+## August
+destfile = paste("~/Desktop/data/2014_", 8, ".xlsm", sep = "")
+download.file(xls_1408, destfile = destfile, mode='wb')
+d_1408 <- read_excel(destfile)
+if (str_detect(d_1408[1,1], "---")){d_1408 = d_1408[-1,]}
+d_1408$Year = 2014
+d_1408$Month = 8
+colnames(d_1408) <- colnames(dat_2014)
+
+dat_2014 <- rbind(dat_2014, d_1408)
+```
+
+
+```{r}
+# Read September data from xls format
+xls_1409 <- xls_2014[9]
+
+#download the file through the link: xls_1409
+destfile = paste("~/Desktop/data/2014_", 9, ".xlsm", sep = "")
+download.file(xls_1409, destfile = destfile, mode='wb')
+#Save the file to .csv in Excel manually
+d_1409 <- read_csv("0914-ffl-list.csv")
+if (str_detect(d_1409[1,1], "---")){d_1409 = d_1409[-1,]}
+d_1409$Year = 2014
+d_1409$Month = 9
+colnames(d_1409) <- colnames(dat_2014)
+
+dat_2014 <- rbind(dat_2014, d_1409)
+```
+
+### load in 2015 data        
+No data files in September and October
+```{r 2015 xls parse}
+# No September and October data in 2015
+url_2015 <- "https://www.atf.gov/firearms/listing-federal-firearms-licensees-ffls-2015"
+
+# get the xls download urls
+### No September and October data
+xls_2015 <- url_2015 %>%
+  read_html() %>%
+  html_nodes(xpath = '//table[2]/tr[2]/td/p/a[text() ="XLS"]|//table[2]/tr[2]/td[text()="-"]') %>% 
+  html_attr("href")
+xls_2015
+
+# get the txt download urls
+### No September, October and November data
+txt_2015 <- url_2015 %>%
+  read_html() %>%
+  html_nodes(xpath = '//table[2]/tr[2]/td/p/a[text() ="TXT"]|//table[2]/tr[2]/td[text()="-"]|//table[2]/tr[2]/td/p[text()="TXT"]') %>% 
+  html_attr("href")
+txt_2015
+```
+
+```{r}
+dat_2015 = data.frame()
+### No September, October and November data in txt format
+for (i in 1:length(txt_2015)){
+  if (i %in% c(9,10,11)){
+    next
+  } else {
+    # download the raw txt from the web
+    destfile = paste("~/Desktop/data/2015_", i, ".txt", sep = "")
+    download.file(txt_2015[i], destfile = destfile, mode='wb')
+    d = read.delim(txt_2015[i])
+    if (str_detect(d[1,1], "---")){
+      d = d[-1,]
+    }
+    d$Year = 2015
+    d$Month = i
+    dat_2015 = rbind(dat_2015, d)
+  }
+  print(i)
+}
+```
+
+```{r}
+# Read November data from xls format
+xls_1511 <- xls_2015[11]
+
+destfile = paste("~/Desktop/data/2015_", 11, ".xlsx", sep = "")
+download.file(xls_1511, destfile = destfile, mode='wb')
+d_1511 <- read_excel(destfile)
+if (str_detect(d_1511[1,1], "---")){d_1511 = d_1511[-1,]}
+d_1511$Year = 2015
+d_1511$Month = 11
+colnames(d_1511) <- colnames(dat_2015)
+
+dat_2015 <- rbind(dat_2015, d_1511)
+```
+
+### load in 2016 data 
+```{r 2016 xls parse}
+url_2016 <- "https://www.atf.gov/firearms/listing-federal-firearms-licensees-ffls-2016"
+
+# get the xls download urls
+xls_2016 <- url_2016 %>%
+  read_html() %>%
+  html_nodes(xpath = '//table[2]/tr[2]/td/p/a[text()="XLS"]') %>% 
+  html_attr("href")
+xls_2016
+
+# get the txt download urls
+txt_2016 <- url_2016 %>%
+  read_html() %>%
+  html_nodes(xpath = '//table[2]/tr[2]/td/p/a[text()="TXT"]') %>% 
+  html_attr("href")
+txt_2016
+```
+
+```{r}
+dat_2016 = data.frame()
+
+for (i in 1:length(txt_2016)){
+  # download the raw txt from the web
+  destfile = paste("~/Desktop/data/2016_", i, ".txt", sep = "")
+  download.file(txt_2016[i], destfile = destfile, mode='wb')
+  d = read.delim(txt_2016[i])
+  # There is an extra column called expire date in August 
+  # Column Voice.Phone in November is split into 2 columns for certain rows
+  if (ncol(d) >17) {
+    d = d[, 1:17]
+  }
+  if (str_detect(d[1,1], "---")){
+    d = d[-1,]
+  }
+  d$Year = 2016
+  d$Month = i
+  dat_2016 = rbind(dat_2016, d)
+  print(i)
+}
+```
+
+### load in 2017 data 
+```{r 2017 xls parse}
+url_2017 <- "https://www.atf.gov/firearms/listing-federal-firearms-licensees-ffls-2017"
+
+# get the xls download urls
+xls_2017 <- url_2017 %>%
+  read_html() %>%
+  html_nodes(xpath = '//table[2]/tr[2]/td/p/a[text()="XLS"]') %>% 
+  html_attr("href")
+xls_2017
+
+# get the txt download urls
+### No March and May
+txt_2017 <- url_2017 %>%
+  read_html() %>%
+  html_nodes(xpath = '//table[2]/tr[2]/td/p/a[text()="TXT"]|//table[2]/tr[2]/td/p[text()="-"]') %>% 
+  html_attr("href")
+txt_2017
+```
+
+```{r}
+dat_2017 = data.frame()
+### No March and May data in txt format
+for (i in 1:length(txt_2017)){
+  if (i %in% c(3,5)){
+    next
+  } else {
+    # download the raw txt from the web
+    destfile = paste("~/Desktop/data/2017_", i, ".txt", sep = "")
+    download.file(txt_2017[i], destfile = destfile, mode='wb')
+    d = read.delim(txt_2017[i])
+    # There is an extra column called expire date in August 
+    # Column Voice.Phone in January is split into 2 columns for certain rows
+    if (ncol(d) >17) {
+    d = d[, 1:17]
+    }
+    if (str_detect(d[1,1], "---")){
+      d = d[-1,]
+    }
+    d$Year = 2017
+    d$Month = i
+    dat_2017 = rbind(dat_2017, d)
+  }
+  print(i)
+}
+```
+
+```{r}
+# Read March and May data from xls format
+xls_1703 <- xls_2017[3]
+xls_1705 <- xls_2017[5]
+
+## March
+destfile = paste("~/Desktop/data/2017_", 3, ".xlsx", sep = "")
+download.file(xls_1703, destfile = destfile, mode='wb')
+d_1703 <- read_excel(destfile)
+# voice.phone column was unnecessarily split into 2 cols
+if (ncol(d_1703) >17) {d_1703 = d_1703[, 1:17]}
+if (str_detect(d_1703[1,1], "---")){d_1703 = d_1703[-1,]}
+d_1703$Year = 2017
+d_1703$Month = 3
+colnames(d_1703) <- colnames(dat_2017)
+
+dat_2017 <- rbind(dat_2017, d_1703)
+
+## May
+destfile = paste("~/Desktop/data/2017_", 5, ".xlsx", sep = "")
+download.file(xls_1705, destfile = destfile, mode='wb')
+d_1705 <- read_excel(destfile)
+if (str_detect(d_1705[1,1], "---")){d_1705 = d_1705[-1,]}
+d_1705$Year = 2017
+d_1705$Month = 5
+colnames(d_1705) <- colnames(dat_2017)
+
+dat_2017 <- rbind(dat_2017, d_1705)
+```
+
+## Combine 4-year data together
+```{r}
+#put the data together
+ffl_data <- rbind(dat_2014, dat_2015, dat_2016, dat_2017)
+
+#delete blank rows
+ffl_data <- ffl_data[-which(ffl_data$Lic.Regn== ""), ]
+```
+
+```{r}
+# create 5-digit zipcode
+#ffl_data$zip <- substr(ffl_data$Premise.Zip.Code, start = 1, stop = 5)
+
+# match zip with the county
+## load in the state_county_fips.csv
+state_county_fips <- read_csv("state_county_fips.csv")
+## left join the county
+ffl_data <- left_join(ffl_data, state_county_fips[,1:4], by=c("Premise.State"="state", "Lic.Cnty" = "county_fip"))
+```
+
+```{r}
+#save as .rds
+saveRDS(ffl_data, "ffl_data.rds")
+```
+
+
+
+
+
+
+
